@@ -1,0 +1,263 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+/* Legacy theme block removed; merge important variables into :root */
+:root {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Courier New', monospace;
+}
+
+/*
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+*/
+
+body {
+  margin: 0;
+  background: linear-gradient(135deg, #f8fbff 0%, #f4f6fb 100%);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Hierarchical tree layout and connectors */
+.family-tree-root {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+.family-tree-header {
+  text-align: center;
+  padding: 1rem 0;
+}
+
+.family-tree-header h1 {
+  font-size: clamp(2rem, 3vw, 2.6rem);
+  margin: 0;
+}
+
+.family-tree-header p {
+  margin: 0.5rem auto 0;
+  max-width: 36rem;
+  color: #4e5a4f;
+}
+
+.family-tree-sheet {
+  background: rgba(255, 255, 255, 0.84);
+  border: 1px solid rgba(15, 23, 32, 0.06);
+  border-radius: 24px;
+  padding: 2rem 1.25rem;
+  box-shadow: 0 24px 60px rgba(31, 41, 55, 0.08);
+}
+
+.tree-node {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  animation: treeFade 420ms ease forwards;
+  animation-delay: var(--node-delay, 0ms);
+}
+
+.tree-node:not(.root-node)::before {
+  content: "";
+  position: absolute;
+  top: -1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 1rem;
+  background: rgba(127, 183, 126, 0.35);
+}
+
+.node-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  background: linear-gradient(180deg, #ffffff, #f7faf6);
+  border-radius: 18px;
+  border: 1px solid rgba(15, 23, 32, 0.08);
+  min-width: 16rem;
+  max-width: 22rem;
+  box-shadow: 0 12px 32px rgba(31, 41, 55, 0.06);
+}
+
+.node-badge {
+  width: 50px;
+  height: 50px;
+  border-radius: 9999px;
+  background: radial-gradient(circle at 20% 20%, #95ce94, #6d9d6a);
+  box-shadow: inset 0 4px 10px rgba(255, 255, 255, 0.35);
+}
+
+.node-copy {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.node-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #10231d;
+}
+
+.node-relation {
+  font-size: 0.92rem;
+  color: #5a675d;
+}
+
+.node-note {
+  font-size: 0.85rem;
+  color: #6b756b;
+}
+
+.node-children {
+  display: flex;
+  justify-content: center;
+  gap: 1.4rem;
+  margin-top: 1.8rem;
+  padding-top: 1.2rem;
+  position: relative;
+}
+
+.node-children::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: calc(100% - 2.4rem);
+  height: 1px;
+  background: rgba(127, 183, 126, 0.22);
+  transform: translateX(-50%);
+}
+
+.node-children > .tree-node::before {
+  top: 0;
+  height: 1.2rem;
+}
+
+@keyframes treeFade {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Form controls */
+.input {
+  width: 100%;
+  border: 1px solid #d7deea;
+  border-radius: 0.95rem;
+  background: #ffffff;
+  padding: 0.8rem 0.95rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.04);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
+}
+
+textarea.input {
+  min-height: 8rem;
+  resize: vertical;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.8rem 1.2rem;
+  border-radius: 9999px;
+  border: 1px solid transparent;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease, color 180ms ease;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  box-shadow: 0 12px 24px rgba(37, 99, 235, 0.22);
+}
+
+.btn-primary:hover {
+  box-shadow: 0 16px 28px rgba(37, 99, 235, 0.28);
+}
+
+.btn-muted {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #e2e8f0;
+}
+
+.btn-muted:hover {
+  background: #f1f5f9;
+}
+
+/* 3D button effect used on header add-member button */
+.btn-3d {
+  transform-style: preserve-3d;
+  perspective: 800px;
+  transition: transform 220ms cubic-bezier(.2,.9,.2,1), box-shadow 220ms ease;
+}
+.btn-3d:hover {
+  transform: translateY(-6px) rotateX(4deg) scale(1.02);
+  box-shadow: 0 18px 36px rgba(25,122,73,0.18);
+}
+.btn-3d:active {
+  transform: translateY(-2px) rotateX(2deg) scale(0.99);
+}
