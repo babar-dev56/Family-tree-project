@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 
 type Member = {
@@ -16,6 +16,14 @@ type FamilyTreeNode = Member & {
 };
 
 export default function FamilyTreePage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <FamilyTreeContent />
+    </Suspense>
+  );
+}
+
+function FamilyTreeContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const rootIdParam = searchParams.get("rootId");
