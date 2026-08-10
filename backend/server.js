@@ -10,8 +10,21 @@ Model.knex(db);
 
 const app = express();
 
+const corsOptions = {
+  origin: [
+    "https://family-tree-project-tlxx.vercel.app",
+    "http://localhost:3000",
+    "http://localhost:5000",
+    "https://family-tree-project-70d43.containers.snapdeploy.app",
+  ],
+  methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  credentials: true,
+};
+
 app.use(express.json());
-app.use(cors());
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 
 const PORT = process.env.PORT || 5000;
 

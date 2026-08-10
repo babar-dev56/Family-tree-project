@@ -2,13 +2,14 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAllPersons, deletePerson } from "../../lib/firestoreService";
 
 type Member = {
-  id: number;
+  id: string;
   name: string;
   age: number | null;
   gender: string;
-  parent_id: number | null;
+  parent?: string | null;
 };
 
 export default function MembersPage() {
@@ -17,57 +18,39 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
   useEffect(() => {
     fetchMembers();
   }, []);
 
-  function fetchMembers() {
+  async function fetchMembers() {
     setLoading(true);
-    fetch(`${API}/members`)
-      .then((res) => res.json())
-      .then((resBody) => {
-        if (resBody && resBody.success && Array.isArray(resBody.data)) {
-          setMembers(resBody.data);
-        } else {
-          setMembers([]);
-        }
-      })
-      .catch((err) => {
-        console.error("Error fetching members:", err);
-        setMembers([]);
-      })
-      .finally(() => {
-        setLoading(false);
-      });
+    try {
+      const data = await getAllPersons();
+      setMembers(data);
+    } catch (err) {
+      console.error("Error fetching members:", err);
+      setMembers([]);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  async function handleDelete(id: number, name: string) {
+  async function handleDelete(id: string, name: string) {
     if (!confirm(`Are you sure you want to delete ${name}?`)) {
       return;
     }
 
     try {
-      const res = await fetch(`${API}/members/${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        alert("Member deleted successfully!");
-        fetchMembers();
-      } else {
-        const errText = await res.text();
-        console.error("Delete error:", errText);
-        alert("Failed to delete member.");
-      }
+      await deletePerson(id);
+      alert("Member deleted successfully!");
+      fetchMembers();
     } catch (err) {
       console.error("Error deleting member:", err);
-      alert("Error deleting member.");
+      alert("Failed to delete member.");
     }
   }
 
-  const getParentName = (parentId: number | null) => {
+  const getParentName = (parentId: string | null | undefined) => {
     if (!parentId) return "None (Root)";
     const parent = members.find((m) => m.id === parentId);
     return parent ? parent.name : `ID: ${parentId}`;
@@ -175,7 +158,7 @@ export default function MembersPage() {
                         {member.gender}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                        {getParentName(member.parent_id)}
+                        {getParentName(member.parent)}
                       </td>
 
                       {/* ── Actions Column ── */}
@@ -191,7 +174,7 @@ export default function MembersPage() {
                           View Tree
                         </button>
 
-                        {/* ✅ Edit Button — naya */}
+                        {/* ✅ Edit Button */}
                         <button
                           onClick={() =>
                             router.push(`/members/${member.id}/edit`)
