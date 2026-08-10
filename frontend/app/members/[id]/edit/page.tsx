@@ -2,31 +2,44 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, collection, getDocs, getDoc, doc, updateDoc, deleteDoc } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 type FormData = {
   name: string;
   age: string;
   gender: string;
-  parent_id: string;
+  parent: string;
 };
 
 type Member = {
-  id: number;
+  id: string;
   name: string;
-  parent_id?: number | null;
+  parent?: string | null;
 };
 
 export default function EditMemberPage() {
   const router = useRouter();
   const params = useParams();
-  const id = params.id;
-  const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
+  const id = params.id as string;
 
   const [form, setForm] = useState<FormData>({
     name: "",
     age: "",
     gender: "",
-    parent_id: "",
+    parent: "",
   });
 
   const [members, setMembers]       = useState<Member[]>([]);
@@ -38,30 +51,35 @@ export default function EditMemberPage() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [memberRes, allMembersRes] = await Promise.all([
-          fetch(`${API}/members/${id}`),
-          fetch(`${API}/members`),
-        ]);
+        const memberSnap = await getDoc(doc(db, "persons", id));
+        const allMembersSnap = await getDocs(collection(db, "persons"));
 
-        const memberJson     = await memberRes.json();
-        const allMembersJson = await allMembersRes.json();
-
-        if (memberJson.success && memberJson.data) {
-          const m = memberJson.data;
+        if (memberSnap.exists()) {
+          const m = memberSnap.data();
           setForm({
             name:      m.name      ?? "",
             age:       String(m.age ?? ""),
             gender:    m.gender    ?? "",
-            parent_id: m.parent_id ? String(m.parent_id) : "",
+            parent: m.parent ? String(m.parent) : "",
           });
+          console.log("Member loaded:", m);
+        } else {
+          setError("Member not found.");
         }
 
-        if (allMembersJson.success && Array.isArray(allMembersJson.data)) {
-          setMembers(
-            allMembersJson.data.filter((m: Member) => m.id !== Number(id))
-          );
-        }
+        const allMembers: Member[] = [];
+        allMembersSnap.forEach((doc) => {
+          if (doc.id !== id) {
+            allMembers.push({
+              id: doc.id,
+              name: doc.data().name || "",
+              parent: doc.data().parent || null,
+            });
+          }
+        });
+        setMembers(allMembers);
       } catch (err) {
+        console.error("Error loading data:", err);
         setError("Could not load member data.");
       } finally {
         setLoading(false);
@@ -95,28 +113,15 @@ export default function EditMemberPage() {
         name:      form.name.trim(),
         age:       parseInt(form.age, 10),
         gender:    form.gender,
-        parent_id: form.parent_id
-          ? parseInt(form.parent_id, 10)
-          : null,
+        parent: form.parent || null,
       };
 
-      const res  = await fetch(`${API}/members/${id}`, {
-        method:  "PUT",
-        headers: { "Content-Type": "application/json" },
-        body:    JSON.stringify(payload),
-      });
-
-      const json = await res.json();
-
-      if (!res.ok || !json.success) {
-        throw new Error(
-          json.errors ? json.errors.join(", ") : json.message
-        );
-      }
-
+      await updateDoc(doc(db, "persons", id), payload);
+      console.log("Member updated successfully");
       router.push("/members");
 
     } catch (err: any) {
+      console.error("Error updating member:", err);
       setError(err.message || "Could not update member.");
     } finally {
       setSubmitting(false);
@@ -131,17 +136,11 @@ export default function EditMemberPage() {
     if (!confirmed) return;
 
     try {
-      const res  = await fetch(`${API}/members/${id}`, {
-        method: "DELETE",
-      });
-      const json = await res.json();
-
-      if (!res.ok || !json.success) {
-        throw new Error(json.message || "Could not delete.");
-      }
-
+      await deleteDoc(doc(db, "persons", id));
+      console.log("Member deleted successfully");
       router.push("/members");
     } catch (err: any) {
+      console.error("Error deleting member:", err);
       setError(err.message || "Could not delete member.");
     }
   }
@@ -250,8 +249,8 @@ export default function EditMemberPage() {
                 Parent
               </label>
               <select
-                name="parent_id"
-                value={form.parent_id}
+                name="parent"
+                value={form.parent}
                 onChange={onChange}
                 className="input mt-1 w-full"
               >

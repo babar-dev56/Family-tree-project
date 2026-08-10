@@ -2,13 +2,27 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, collection, getDocs, deleteDoc, doc } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 type Member = {
-  id: number;
+  id: string;
   name: string;
   age: number | null;
   gender: string;
-  parent_id: number | null;
+  parent?: string | null;
 };
 
 export default function MembersPage() {
@@ -17,25 +31,29 @@ export default function MembersPage() {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
 
-  const API = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:5000";
-
   useEffect(() => {
     fetchMembers();
   }, []);
 
   function fetchMembers() {
     setLoading(true);
-    fetch(`${API}/members`)
-      .then((res) => res.json())
-      .then((resBody) => {
-        if (resBody && resBody.success && Array.isArray(resBody.data)) {
-          setMembers(resBody.data);
-        } else {
-          setMembers([]);
-        }
+    getDocs(collection(db, "persons"))
+      .then((snapshot) => {
+        const data: Member[] = [];
+        snapshot.forEach((doc) => {
+          data.push({
+            id: doc.id,
+            name: doc.data().name || "",
+            age: doc.data().age || null,
+            gender: doc.data().gender || "",
+            parent: doc.data().parent || null,
+          });
+        });
+        console.log("Fetched members from Firebase:", data);
+        setMembers(data);
       })
       .catch((err) => {
-        console.error("Error fetching members:", err);
+        console.error("Error fetching members from Firebase:", err);
         setMembers([]);
       })
       .finally(() => {
@@ -43,31 +61,22 @@ export default function MembersPage() {
       });
   }
 
-  async function handleDelete(id: number, name: string) {
+  async function handleDelete(id: string, name: string) {
     if (!confirm(`Are you sure you want to delete ${name}?`)) {
       return;
     }
 
     try {
-      const res = await fetch(`${API}/members/${id}`, {
-        method: "DELETE",
-      });
-
-      if (res.ok) {
-        alert("Member deleted successfully!");
-        fetchMembers();
-      } else {
-        const errText = await res.text();
-        console.error("Delete error:", errText);
-        alert("Failed to delete member.");
-      }
+      await deleteDoc(doc(db, "persons", id));
+      alert("Member deleted successfully!");
+      fetchMembers();
     } catch (err) {
       console.error("Error deleting member:", err);
       alert("Error deleting member.");
     }
   }
 
-  const getParentName = (parentId: number | null) => {
+  const getParentName = (parentId: string | null | undefined) => {
     if (!parentId) return "None (Root)";
     const parent = members.find((m) => m.id === parentId);
     return parent ? parent.name : `ID: ${parentId}`;
@@ -175,7 +184,7 @@ export default function MembersPage() {
                         {member.gender}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                        {getParentName(member.parent_id)}
+                        {getParentName(member.parent)}
                       </td>
 
                       {/* ── Actions Column ── */}
