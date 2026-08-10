@@ -14,7 +14,9 @@ import {
 // CREATE - Add a new person
 export const addPerson = async (personData) => {
   try {
+    console.log("Adding person:", personData);
     const docRef = await addDoc(collection(db, "persons"), personData);
+    console.log("Person added with ID:", docRef);
     return { id: docRef.id, ...personData };
   } catch (error) {
     console.error("Error adding person:", error);

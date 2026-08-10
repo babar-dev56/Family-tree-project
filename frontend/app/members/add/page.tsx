@@ -2,16 +2,29 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { initializeApp, getApps, getApp } from "firebase/app";
+import { getFirestore, collection, addDoc, getDocs } from "firebase/firestore";
+
+const firebaseConfig = {
+  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+};
+
+const app = getApps().length ? getApp() : initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 type Member = {
-  id: number;
+  id: string;
   name: string;
-  parent_id?: number | null;
+  parent?: string | null;
 };
 
 export default function AddMemberPage() {
   const router = useRouter();
-  // console.log(process.env.NEXT_PUBLIC_API_URL);
 
   const [members, setMembers] = useState<Member[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(false);
@@ -21,37 +34,31 @@ export default function AddMemberPage() {
     name: "",
     age: "",
     gender: "",
-    parent_id: "",
+    parent: "",
     notes: "",
   });
 
   useEffect(() => {
-    setLoadingMembers(true);
-
-    const API = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-    console.log("API URL:", API);
-    console.log("GET URL:", `${API}/members`);
-
-    fetch(`${API}/members`)
-      .then((r) => r.json())
-      .then((res) => {
-        if (res && res.success && Array.isArray(res.data)) {
-          console.log("Fetched members:", res.data);
-          setMembers(res.data);
-        } else {
-          console.warn("Unexpected API response structure:", res);
-          setMembers([]);
-        }
-      })
-      .catch((err) => {
-        console.error("GET Error:", err);
-        setMembers([]);
-      })
-      .finally(() => {
-        setLoadingMembers(false);
-      });
+    loadMembers();
   }, []);
+
+  async function loadMembers() {
+    setLoadingMembers(true);
+    try {
+      const querySnapshot = await getDocs(collection(db, "persons"));
+      const data: Member[] = [];
+      querySnapshot.forEach((doc) => {
+        data.push({ id: doc.id, name: doc.data().name, parent: doc.data().parent });
+      });
+      setMembers(data);
+      console.log("Fetched members:", data);
+    } catch (err) {
+      console.error("Error fetching members:", err);
+      setMembers([]);
+    } finally {
+      setLoadingMembers(false);
+    }
+  }
 
   function onChange(
     e: React.ChangeEvent<
@@ -71,43 +78,23 @@ export default function AddMemberPage() {
     setSubmitting(true);
 
     try {
-      const API = process.env.NEXT_PUBLIC_API_URL ?? "";
-
-      console.log("API URL:", API);
-
       const payload = {
         name: form.name,
         age: form.age ? parseInt(form.age, 10) : null,
         gender: form.gender,
-        parent_id: form.parent_id
-          ? parseInt(form.parent_id, 10)
-          : null,
-        notes: form.notes || null,
+        parent: form.parent || null,
+        notes: form.notes || "",
       };
 
-      console.log("POST URL:", `${API}/members`);
-      console.log("Payload:", payload);
+      console.log("Adding member with payload:", payload);
 
-      const res = await fetch(`${API}/members`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
-      });
-
-      console.log("Status:", res.status);
-
-      if (!res.ok) {
-        const errorText = await res.text();
-        console.log("Server Error:", errorText);
-        throw new Error("Failed to add member");
-      }
+      const docRef = await addDoc(collection(db, "persons"), payload);
+      console.log("Member added with ID:", docRef.id);
 
       alert("Member added successfully!");
       router.push("/members");
     } catch (err) {
-      console.error(err);
+      console.error("Error adding member:", err);
       alert("Could not add member. Check console for details.");
     } finally {
       setSubmitting(false);
@@ -157,18 +144,18 @@ export default function AddMemberPage() {
                 <div className="mb-1 text-sm font-medium text-slate-700">Gender <span className="text-rose-600">*</span></div>
                 <select name="gender" value={form.gender} onChange={onChange} required className="input">
                   <option value="">Select gender</option>
-                  <option>Male</option>
-                  <option>Female</option>
-                  <option>Other</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
                 </select>
               </label>
 
               <label className="sm:col-span-3">
                 <div className="mb-1 text-sm font-medium text-slate-700">Parent</div>
-                <select name="parent_id" value={form.parent_id} onChange={onChange} className="input">
+                <select name="parent" value={form.parent} onChange={onChange} className="input">
                   <option value="">Select parent (optional for a root member)</option>
                   {loadingMembers ? <option>Loading...</option> : members.map((p) => (
-                    <option key={p.id} value={String(p.id)}>{p.name}</option>
+                    <option key={p.id} value={p.id}>{p.name}</option>
                   ))}
                 </select>
                 <p className="mt-2 text-xs text-slate-500">If no parent is selected, this member will be considered as a root member.</p>
@@ -189,13 +176,13 @@ export default function AddMemberPage() {
             <h3 className="text-md font-semibold text-slate-900">Family preview</h3>
             <p className="mt-1 text-sm text-slate-500">Choose a parent to see the existing siblings in that branch.</p>
             <div className="mt-4 rounded-2xl border border-slate-100 bg-slate-50 p-4 text-sm text-slate-700">
-              {form.parent_id ? (
+              {form.parent ? (
                 <div>
                   <div className="mb-2 font-medium text-slate-800">Siblings with the same parent</div>
                   <ul className="list-disc space-y-1 pl-5">
-                    {members.filter((m) => m.parent_id === (form.parent_id ? Number(form.parent_id) : null)).length > 0 ? (
+                    {members.filter((m) => m.parent === form.parent).length > 0 ? (
                       members
-                        .filter((m) => m.parent_id === (form.parent_id ? Number(form.parent_id) : null))
+                        .filter((m) => m.parent === form.parent)
                         .map((s) => (
                           <li key={s.id} className="py-1">{s.name}</li>
                         ))
@@ -221,4 +208,3 @@ export default function AddMemberPage() {
     </main>
   );
 }
- 
