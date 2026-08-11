@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { initializeApp, getApps, getApp } from "firebase/app";
 import { getFirestore, collection, getDocs, deleteDoc, doc } from "firebase/firestore";
@@ -30,6 +31,7 @@ export default function MembersPage() {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [shakingId, setShakingId] = useState<string | null>(null);
 
   useEffect(() => {
     fetchMembers();
@@ -65,6 +67,10 @@ export default function MembersPage() {
     if (!confirm(`Are you sure you want to delete ${name}?`)) {
       return;
     }
+
+    setShakingId(id);
+    await new Promise((resolve) => setTimeout(resolve, 340));
+    setShakingId(null);
 
     try {
       await deleteDoc(doc(db, "persons", id));
@@ -165,10 +171,28 @@ export default function MembersPage() {
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
+                <motion.tbody
+                  className="divide-y divide-slate-200 bg-white"
+                  initial="hidden"
+                  animate="visible"
+                  variants={{
+                    hidden: {},
+                    visible: {
+                      transition: {
+                        staggerChildren: 0.05,
+                      },
+                    },
+                  }}
+                >
                   {filteredMembers.map((member) => (
-                    <tr
+                    <motion.tr
                       key={member.id}
+                      variants={{
+                        hidden: { opacity: 0, y: 14 },
+                        visible: { opacity: 1, y: 0 },
+                      }}
+                      transition={{ duration: 0.32, ease: "easeOut" }}
+                      whileHover={{ scale: 1.002 }}
                       className="hover:bg-slate-50/55 transition duration-150"
                     >
                       <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-slate-500">
@@ -215,7 +239,9 @@ export default function MembersPage() {
                           onClick={() =>
                             handleDelete(member.id, member.name)
                           }
-                          className="text-rose-600 hover:text-rose-900 px-2 py-1 rounded hover:bg-rose-50 transition"
+                          className={`text-rose-600 hover:text-rose-900 px-2 py-1 rounded hover:bg-rose-50 transition ${
+                            shakingId === member.id ? "animate-shake" : ""
+                          }`}
                         >
                           Delete
                         </button>
