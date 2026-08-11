@@ -8,10 +8,9 @@ import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
 type Member = {
   id: string;
   name?: string;
-  relation?: string;
   age?: number;
   gender?: string;
-  parent_id?: string;
+  parent?: string | null;
 };
 
 export default function MembersPage() {
@@ -36,10 +35,13 @@ export default function MembersPage() {
     }
 
     try {
-      const snapshot = await getDocs(collection(db, "members"));
-      const data = snapshot.docs.map((doc) => ({ 
-        id: doc.id, 
-        ...doc.data() 
+      const snapshot = await getDocs(collection(db, "persons"));
+      const data = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        name: doc.data().name as string,
+        age: doc.data().age as number | null,
+        gender: doc.data().gender as string,
+        parent: doc.data().parent as string | null,
       })) as Member[];
       setMembers(data);
     } catch (err) {
@@ -140,7 +142,7 @@ export default function MembersPage() {
                       Name
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Relation
+                      Parent
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
                       Age
@@ -163,10 +165,10 @@ export default function MembersPage() {
                         {member.name || "N/A"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                        {member.relation || "N/A"}
+                        {getParentName(member.parent)}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                        {member.age || "N/A"}
+                        {member.age ?? "N/A"}
                       </td>
                       <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600 capitalize">
                         {member.gender || "N/A"}
