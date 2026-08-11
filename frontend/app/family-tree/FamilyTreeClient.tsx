@@ -148,14 +148,14 @@ export default function MembersPage() {
         <div className="mb-6 rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-blue-700">
-                Firestore Records
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-slate-500">
+                Family Tree
               </p>
               <h1 className="mt-2 text-3xl font-semibold text-slate-900">
-                Family Members
+                Family Tree Visualizer
               </h1>
               <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                View and manage all members in your family tree from Firebase.
+                Explore your family hierarchy with a compact, professional tree layout.
               </p>
             </div>
 
