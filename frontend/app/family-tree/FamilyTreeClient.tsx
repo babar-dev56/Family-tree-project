@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, CSSProperties } from "react";
 import { useRouter } from "next/navigation";
 import { db, isFirebaseConfigured } from "../../lib/firebase";
 import { collection, getDocs, deleteDoc, doc } from "firebase/firestore";
@@ -12,6 +12,36 @@ type Member = {
   gender?: string;
   parent?: string | null;
 };
+
+type MemberNode = Member & {
+  children: MemberNode[];
+};
+
+function buildFamilyTree(members: Member[]): MemberNode[] {
+  const nodes = new Map<string, MemberNode>();
+
+  members.forEach((member) => {
+    nodes.set(member.id, { ...member, children: [] });
+  });
+
+  const roots: MemberNode[] = [];
+
+  nodes.forEach((node) => {
+    if (node.parent && nodes.has(node.parent)) {
+      nodes.get(node.parent)!.children.push(node);
+    } else {
+      roots.push(node);
+    }
+  });
+
+  const sortNodes = (items: MemberNode[]) => {
+    items.sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+    items.forEach((child) => sortNodes(child.children));
+  };
+
+  sortNodes(roots);
+  return roots;
+}
 
 export default function MembersPage() {
   const router = useRouter();
@@ -59,7 +89,7 @@ export default function MembersPage() {
     }
 
     try {
-      await deleteDoc(doc(db, "members", id));
+      await deleteDoc(doc(db, "persons", id));
       alert("Member deleted successfully!");
       await fetchMembers();
     } catch (err) {
@@ -78,9 +108,41 @@ export default function MembersPage() {
     (member.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  const familyTree = useMemo(() => buildFamilyTree(members), [members]);
+
+  const renderFamilyNodes = (nodes: MemberNode[], depth = 0) => {
+    return nodes.map((node) => (
+      <div
+        key={node.id}
+        className={`tree-node ${depth === 0 ? "root-node" : ""}`}
+        style={{ "--node-delay": `${depth * 80}ms` } as CSSProperties}
+      >
+        <div className="node-card">
+          <div className="node-badge">{node.name?.charAt(0) || "?"}</div>
+          <div className="node-copy">
+            <div className="node-name">{node.name || "Unknown"}</div>
+            <div className="node-relation">
+              {node.parent ? `Child of ${getParentName(node.parent)}` : "Root member"}
+            </div>
+            <div className="node-note">
+              {node.gender ? `${node.gender}, ` : ""}
+              {node.age != null ? `${node.age} years` : "Age not set"}
+            </div>
+          </div>
+        </div>
+
+        {node.children.length > 0 && (
+          <div className="node-children">
+            {renderFamilyNodes(node.children, depth + 1)}
+          </div>
+        )}
+      </div>
+    ));
+  };
+
   return (
     <main className="min-h-screen bg-transparent px-4 py-8 sm:px-6 lg:px-8 animate-[fadeInUp_0.4s_ease-out]">
-      <div className="mx-auto max-w-6xl">
+      <div className="mx-auto max-w-7xl">
 
         {/* Header Section */}
         <div className="mb-6 rounded-[28px] border border-slate-200/80 bg-white/90 p-6 shadow-[0_24px_70px_rgba(15,23,42,0.08)] backdrop-blur">
@@ -134,70 +196,88 @@ export default function MembersPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-slate-200">
-                <thead className="bg-slate-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Name
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Parent
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Age
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Gender
-                    </th>
-                    <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 bg-white">
-                  {filteredMembers.map((member) => (
-                    <tr
-                      key={member.id}
-                      className="hover:bg-slate-50/55 transition duration-150"
-                    >
-                      <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-slate-900">
-                        {member.name || "N/A"}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                        {getParentName(member.parent)}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                        {member.age ?? "N/A"}
-                      </td>
-                      <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600 capitalize">
-                        {member.gender || "N/A"}
-                      </td>
-
-                      <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium space-x-2">
-                        <button
-                          onClick={() =>
-                            router.push(`/members/${member.id}/edit`)
-                          }
-                          className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50 transition"
-                        >
-                          Edit
-                        </button>
-
-                        <button
-                          onClick={() =>
-                            handleDelete(member.id, member.name || "Member")
-                          }
-                          className="text-rose-600 hover:text-rose-900 px-2 py-1 rounded hover:bg-rose-50 transition"
-                        >
-                          Delete
-                        </button>
-                      </td>
+            <>
+              <div className="overflow-x-auto mb-6">
+                <table className="min-w-full divide-y divide-slate-200">
+                  <thead className="bg-slate-50">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Name
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Parent
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Age
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Gender
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 bg-white">
+                    {filteredMembers.map((member) => (
+                      <tr
+                        key={member.id}
+                        className="hover:bg-slate-50/55 transition duration-150"
+                      >
+                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-slate-900">
+                          {member.name || "N/A"}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                          {getParentName(member.parent)}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
+                          {member.age ?? "N/A"}
+                        </td>
+                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600 capitalize">
+                          {member.gender || "N/A"}
+                        </td>
+
+                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium space-x-2">
+                          <button
+                            onClick={() =>
+                              router.push(`/members/${member.id}/edit`)
+                            }
+                            className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50 transition"
+                          >
+                            Edit
+                          </button>
+
+                          <button
+                            onClick={() =>
+                              handleDelete(member.id, member.name || "Member")
+                            }
+                            className="text-rose-600 hover:text-rose-900 px-2 py-1 rounded hover:bg-rose-50 transition"
+                          >
+                            Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <section className="family-tree-sheet">
+                <div className="family-tree-header">
+                  <h2 className="text-2xl font-semibold text-slate-900">Family Tree</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    A hierarchical view of your members in parent-child structure.
+                  </p>
+                </div>
+                <div className="family-tree-root">
+                  {familyTree.length > 0 ? (
+                    renderFamilyNodes(familyTree)
+                  ) : (
+                    <p className="text-slate-500">No family tree data is available.</p>
+                  )}
+                </div>
+              </section>
+            </>
           )}
         </div>
       </div>
