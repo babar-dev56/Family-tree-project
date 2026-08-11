@@ -247,9 +247,9 @@ export default function MembersPage() {
                         </button>
 
                       </td>
-                    </tr>
+                    </motion.tr>
                   ))}
-                </tbody>
+                </motion.tbody>
               </table>
             </div>
           )}
