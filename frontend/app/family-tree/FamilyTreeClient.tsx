@@ -108,7 +108,7 @@ export default function MembersPage() {
     (member.name || "").toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const familyTree = useMemo(() => buildFamilyTree(members), [members]);
+  const familyTree = useMemo(() => buildFamilyTree(filteredMembers), [filteredMembers]);
 
   const renderFamilyNodes = (nodes: MemberNode[], depth = 0) => {
     return nodes.map((node) => (
@@ -170,114 +170,69 @@ export default function MembersPage() {
           </div>
         </div>
 
-        {/* Filter & Listing Section */}
-        <div className="rounded-[24px] border border-slate-200 bg-white p-6 shadow-[0_16px_45px_rgba(15,23,42,0.06)]">
-          <div className="mb-6">
-            <input
-              type="text"
-              placeholder="Search by name..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="input max-w-md"
-            />
-          </div>
-
-          {error && <p style={{ color: "red" }}>{error}</p>}
-
-          {loading ? (
-            <div className="flex justify-center py-12 text-slate-500">
-              <span className="animate-pulse">Loading members from Firebase...</span>
-            </div>
-          ) : filteredMembers.length === 0 ? (
-            <div className="text-center py-12 text-slate-500">
-              <p className="text-lg font-medium">No family members found.</p>
-              <p className="mt-1 text-sm">
-                Add a new member or modify your search criteria.
+        {/* Family Tree Section */}
+        <div className="rounded-[28px] border border-slate-200 bg-slate-50/90 p-6 shadow-[0_16px_45px_rgba(15,23,42,0.08)] backdrop-blur-xl">
+          <div className="mb-7 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-[0.24em] text-sky-700">
+                Family Tree Dashboard
+              </p>
+              <h2 className="mt-3 text-3xl font-semibold text-slate-950">
+                Visual Family Tree
+              </h2>
+              <p className="mt-2 max-w-3xl text-sm text-slate-600">
+                Explore your tree with a clean hierarchical layout. Each box shows member details and family connections.
               </p>
             </div>
+
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+              <input
+                type="text"
+                placeholder="Search for a member"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="input w-full max-w-md"
+              />
+              <button
+                onClick={() => router.push("/members/add")}
+                className="btn btn-primary whitespace-nowrap"
+              >
+                + Add Member
+              </button>
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-rose-600 mb-5">{error}</p>}
+
+          {loading ? (
+            <div className="flex justify-center py-24 text-slate-500">
+              <span className="animate-pulse text-lg">Building your family tree...</span>
+            </div>
+          ) : filteredMembers.length === 0 ? (
+            <div className="rounded-3xl border border-slate-200 bg-white px-8 py-16 text-center shadow-sm">
+              <p className="text-xl font-semibold text-slate-900">No members available</p>
+              <p className="mt-2 text-sm text-slate-500">Add members to begin creating a visual family tree.</p>
+            </div>
           ) : (
-            <>
-              <div className="overflow-x-auto mb-6">
-                <table className="min-w-full divide-y divide-slate-200">
-                  <thead className="bg-slate-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Parent
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Age
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Gender
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
-                    {filteredMembers.map((member) => (
-                      <tr
-                        key={member.id}
-                        className="hover:bg-slate-50/55 transition duration-150"
-                      >
-                        <td className="whitespace-nowrap px-6 py-4 text-sm font-semibold text-slate-900">
-                          {member.name || "N/A"}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                          {getParentName(member.parent)}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600">
-                          {member.age ?? "N/A"}
-                        </td>
-                        <td className="whitespace-nowrap px-6 py-4 text-sm text-slate-600 capitalize">
-                          {member.gender || "N/A"}
-                        </td>
-
-                        <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium space-x-2">
-                          <button
-                            onClick={() =>
-                              router.push(`/members/${member.id}/edit`)
-                            }
-                            className="text-blue-600 hover:text-blue-900 px-2 py-1 rounded hover:bg-blue-50 transition"
-                          >
-                            Edit
-                          </button>
-
-                          <button
-                            onClick={() =>
-                              handleDelete(member.id, member.name || "Member")
-                            }
-                            className="text-rose-600 hover:text-rose-900 px-2 py-1 rounded hover:bg-rose-50 transition"
-                          >
-                            Delete
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            <section className="family-tree-sheet">
+              <div className="family-tree-header">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Family tree</p>
+                  <h3 className="mt-2 text-2xl font-semibold text-slate-950">Tree view</h3>
+                </div>
+                <p className="mt-3 max-w-2xl text-sm text-slate-600">
+                  Use this layout to visualize your members and their parent-child relationships. Hover over any node for details.
+                </p>
               </div>
 
-              <section className="family-tree-sheet">
-                <div className="family-tree-header">
-                  <h2 className="text-2xl font-semibold text-slate-900">Family Tree</h2>
-                  <p className="mt-2 text-sm text-slate-600">
-                    A hierarchical view of your members in parent-child structure.
-                  </p>
-                </div>
-                <div className="family-tree-root">
-                  {familyTree.length > 0 ? (
-                    renderFamilyNodes(familyTree)
-                  ) : (
-                    <p className="text-slate-500">No family tree data is available.</p>
-                  )}
-                </div>
-              </section>
-            </>
+              <div className="family-tree-root">
+                {familyTree.length > 0 ? (
+                  renderFamilyNodes(familyTree)
+                ) : (
+                  <p className="text-center text-slate-500">No root members found. Ensure at least one member has no parent.</p>
+                )}
+              </div>
+            </section>
           )}
         </div>
       </div>

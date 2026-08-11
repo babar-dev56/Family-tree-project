@@ -107,32 +107,35 @@ html {
 .family-tree-root {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
-  padding: 1rem;
+  gap: 2.5rem;
+  padding: 1rem 0;
+  width: 100%;
 }
 
 .family-tree-header {
-  text-align: center;
-  padding: 1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.16);
 }
 
-.family-tree-header h1 {
-  font-size: clamp(2rem, 3vw, 2.6rem);
+.family-tree-header h1,
+.family-tree-header h3 {
   margin: 0;
 }
 
 .family-tree-header p {
-  margin: 0.5rem auto 0;
-  max-width: 36rem;
-  color: #4e5a4f;
+  margin: 0;
+  color: #475569;
 }
 
 .family-tree-sheet {
-  background: rgba(255, 255, 255, 0.84);
-  border: 1px solid rgba(15, 23, 32, 0.06);
-  border-radius: 24px;
-  padding: 2rem 1.25rem;
-  box-shadow: 0 24px 60px rgba(31, 41, 55, 0.08);
+  background: linear-gradient(180deg, rgba(255,255,255,0.95), rgba(248,250,252,0.92));
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 28px;
+  padding: 2rem;
+  box-shadow: 0 24px 70px rgba(15, 23, 42, 0.06);
 }
 
 .tree-node {
@@ -140,69 +143,102 @@ html {
   flex-direction: column;
   align-items: center;
   position: relative;
-  animation: treeFade 420ms ease forwards;
+  animation: popIn 420ms ease forwards;
   animation-delay: var(--node-delay, 0ms);
 }
 
 .tree-node:not(.root-node)::before {
   content: "";
   position: absolute;
-  top: -1.25rem;
+  top: -1.3rem;
   left: 50%;
   transform: translateX(-50%);
   width: 2px;
-  height: 1rem;
-  background: rgba(127, 183, 126, 0.35);
+  height: 1.25rem;
+  background: rgba(148, 163, 184, 0.32);
 }
 
 .node-card {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  padding: 1.1rem 1.25rem;
-  background: linear-gradient(180deg, #ffffff, #f7faf6);
-  border-radius: 18px;
-  border: 1px solid rgba(15, 23, 32, 0.08);
-  min-width: 16rem;
-  max-width: 22rem;
-  box-shadow: 0 12px 32px rgba(31, 41, 55, 0.06);
+  width: min(100%, 20rem);
+  padding: 1.25rem 1.4rem;
+  background: linear-gradient(135deg, #f8fbff 0%, #ffffff 100%);
+  border-radius: 22px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  box-shadow: 0 24px 45px rgba(15, 23, 42, 0.08);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
 }
 
 .node-badge {
-  width: 50px;
-  height: 50px;
+  width: 52px;
+  height: 52px;
   border-radius: 9999px;
-  background: radial-gradient(circle at 20% 20%, #95ce94, #6d9d6a);
-  box-shadow: inset 0 4px 10px rgba(255, 255, 255, 0.35);
+  background: radial-gradient(circle at 25% 25%, #60a5fa, #2563eb);
+  color: white;
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 4px 10px rgba(255, 255, 255, 0.15);
 }
 
 .node-copy {
   display: grid;
-  gap: 0.2rem;
+  gap: 0.18rem;
+  min-width: 0;
 }
 
 .node-name {
   font-size: 1rem;
+  line-height: 1.2;
   font-weight: 700;
-  color: #10231d;
+  color: #0f172a;
 }
 
 .node-relation {
-  font-size: 0.92rem;
-  color: #5a675d;
+  font-size: 0.88rem;
+  color: #475569;
 }
 
 .node-note {
-  font-size: 0.85rem;
-  color: #6b756b;
+  font-size: 0.82rem;
+  color: #64748b;
+}
+
+.node-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.node-actions button {
+  min-width: 2.8rem;
+  background: rgba(15, 23, 42, 0.04);
+  border: none;
+  border-radius: 9999px;
+  color: #0f172a;
+  padding: 0.65rem 0.85rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 160ms ease, transform 160ms ease, color 160ms ease;
+}
+
+.node-actions button:hover {
+  background: rgba(37, 99, 235, 0.1);
+  color: #1d4ed8;
+  transform: translateY(-1px);
 }
 
 .node-children {
   display: flex;
+  flex-wrap: wrap;
   justify-content: center;
-  gap: 1.4rem;
-  margin-top: 1.8rem;
-  padding-top: 1.2rem;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  padding-top: 1.25rem;
   position: relative;
 }
 
@@ -211,17 +247,17 @@ html {
   position: absolute;
   top: 0;
   left: 50%;
-  width: calc(100% - 2.4rem);
+  width: calc(100% - 2.8rem);
   height: 1px;
-  background: rgba(127, 183, 126, 0.22);
+  background: rgba(148, 163, 184, 0.24);
   transform: translateX(-50%);
   animation: drawLine 420ms ease forwards;
   animation-delay: var(--line-delay, 0ms);
 }
 
 .tree-node:hover .node-card {
-  transform: translateY(-2px) scale(1.008);
-  box-shadow: 0 18px 40px rgba(31, 41, 55, 0.12);
+  transform: translateY(-3px) scale(1.01);
+  box-shadow: 0 24px 48px rgba(15, 23, 42, 0.12);
 }
 
 .tree-node:hover {
@@ -238,7 +274,37 @@ html {
 
 .node-children > .tree-node::before {
   top: 0;
-  height: 1.2rem;
+  height: 1.3rem;
+}
+
+@media (max-width: 900px) {
+  .node-children {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .node-card {
+    width: 100%;
+    max-width: 24rem;
+  }
+}
+
+.input {
+  width: 100%;
+  border: 1px solid #cbd5e1;
+  border-radius: 1rem;
+  background: #ffffff;
+  padding: 0.85rem 1rem;
+  font-size: 0.95rem;
+  color: #0f172a;
+  box-shadow: inset 0 1px 2px rgba(15, 23, 42, 0.05);
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.14);
 }
 
 /* Form controls */
