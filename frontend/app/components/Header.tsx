@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 
 export default function Header() {
@@ -36,9 +37,9 @@ export default function Header() {
               Add Family Member
             </a>
 
-            <button className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 sm:px-5">
+            <Link href="/login" className="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700 sm:px-5">
               Login
-            </button>
+            </Link>
           </div>
 
           <div className={`w-full md:w-auto ${menuOpen ? "block" : "hidden"} md:block`}>
