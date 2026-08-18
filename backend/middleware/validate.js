@@ -25,7 +25,7 @@ const validate = (schema) => (req, res, next) => {
   const target = isParams ? req.params : req.body;
   const { value, error } = schema.validate(target || {}, {
     abortEarly: false,
-    allowUnknown: false
+    allowUnknown: false 
   });
 
   if (error) {
