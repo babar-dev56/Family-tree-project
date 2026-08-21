@@ -73,7 +73,7 @@ export default function LoginPage() {
     }
   };
 
-  return (
+  return  (
     <main className="min-h-screen bg-slate-50 px-4 py-20 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-md rounded-3xl border border-slate-200 bg-white/95 p-8 shadow-xl shadow-slate-200/50">
         <h1 className="text-3xl font-semibold text-slate-900">
